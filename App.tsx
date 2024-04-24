@@ -20,7 +20,6 @@ const App = () => {
         </Stack.Navigator>
       </NavigationContainer>
 
-
     </View>
 
   )

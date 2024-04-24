@@ -9,6 +9,7 @@ const DetailScreen = ({ route }) => {
 
   const fetchDetails = async () => {
     try {
+      //const response = await axios.get(`http://5.135.79.232:1680/Historique/getSocDate?Societe=GHERIB FARHAT FRERES&Date=${item.date}`);
       const response = await axios.get(`http://41.226.178.8:1680/Historique/getSocDate?Societe=GHERIB FARHAT FRERES&Date=${item.date}`);
       setDetails(response.data);
     } catch (error) {
@@ -33,26 +34,53 @@ const DetailScreen = ({ route }) => {
   const renderDetails = () => {
     if (details) {
       return details.map((item) => {
-
-        const formattedDate = formatDate(item.date);
-
         const formattedHeureDepart =
           item.heure_Depart.substring(0, 2) + ':' + item.heure_Depart.substring(2);
 
-        const caisse = item.montant1 - item.taxe - 300;
+        const caisse = (item.montant1 - item.taxe - 300).toFixed(2);
+
         return (
           <View style={styles.row} key={item.idhistorique}>
-            <Text style={styles.text}>Code Route : {item.codeRoute}</Text>
-            <Text style={styles.text}>Heure Depart : {formattedHeureDepart}</Text>
-            <Text style={styles.text}>N° Tickets : {item.nbVoyageur}</Text>
-            <Text style={styles.text}>Recette : {item.montant1}</Text>
-            <Text style={styles.text}>Taxe : {item.taxe}</Text>
-            <Text style={styles.text}>Caisse : {caisse}</Text>
+            <View style={styles.two}>
+              <View style={styles.infoBox}>
+                <Text style={styles.label}>Code Route: {item.codeRoute}</Text>
+              </View>
+
+              <View style={styles.infoBox}>
+                <Text style={styles.label}>Départ: {formattedHeureDepart}</Text>
+              </View>
+            </View>
+
+            <View style={styles.two}>
+              <View style={styles.infoBox}>
+                <Text style={styles.label}>N° Tickets: {item.nbVoyageur}</Text>
+              </View>
+
+              <View style={styles.infoBox}>
+                <Text style={styles.label}>Recette: {item.montant1.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.two}>
+              <View style={styles.infoBox}>
+                <Text style={styles.label}>Taxe: {item.taxe.toFixed(2)}</Text>
+              </View>
+
+              <View style={styles.infoBox}>
+                <Text style={styles.label}>D'acces: {item.dacces.toFixed(2)}</Text>
+              </View>
+            </View>
+
+            <View style={styles.infoBox}>
+              <View style={styles.caisseBox}>
+                <Text style={styles.label}>Caisse: {caisse}</Text>
+              </View>
+            </View>
           </View>
         );
       });
     } else {
-      return <Text>les informations pour cette page ne sont pas valables pour le moment</Text>;
+      return <Text>Les informations pour cette page ne sont pas valables pour le moment</Text>;
     }
   };
 
@@ -71,7 +99,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     paddingTop: 30,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffff',
     justifyContent: 'center',
   },
   titre: {
@@ -83,14 +111,43 @@ const styles = StyleSheet.create({
   row: {
     // flexDirection: 'row',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#C1C0B9',
     padding: 10,
+    margin: 10,
+    borderRadius: 10,
+  },
+  two: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
+    margin: 10,
   },
   text: {
     margin: 6,
     fontSize: 15,
     fontWeight: 'bold',
+  },
+  caisseBox: {
+    backgroundColor: '#e6e6e6',
+    padding: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'grey',
+  },
+  caisseText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  infoBox: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
 });
 

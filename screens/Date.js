@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Button } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
-import LottieView from 'lottie-react-native';
-import { format, parseISO, getYear, getMonth } from 'date-fns';
 import { useNavigation } from '@react-navigation/native';
+import LottieView from 'lottie-react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
-
 
 const GheribData = () => {
 
     const navigation = useNavigation();
 
+    const [loading, setLoading] = useState(true);
     const [tableData, setTableData] = useState([]);
     const [filteredTableData, setFilteredTableData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [selectedMonth, setSelectedMonth] = useState('');
-    const [selectedYear, setSelectedYear] = useState('');
+    const [searchYear, setSearchYear] = useState('');
+    const [searchMonth, setSearchMonth] = useState('');
+
 
     useEffect(() => {
         fetchData();
@@ -24,73 +24,71 @@ const GheribData = () => {
 
     const fetchData = async () => {
         try {
+            //  const response = await axios.get('http://5.135.79.232:1680/Date/AllDate');
             const response = await axios.get('http://41.226.178.8:1680/Date/AllDate');
             setTableData(response.data);
             setFilteredTableData(response.data);
             setLoading(false);
         } catch (error) {
             console.error('Error fetching data:', error);
+            //setLoading(false);
+
         }
     };
 
-    const formatDate = (dateString) => {
-        try {
-            const parsedDate = parseISO(dateString);
-            const formattedDate = format(parsedDate, 'dd/MM/yyyy');
-            return formattedDate;
-        } catch (error) {
-            console.error('Error parsing date:', error);
-            return 'Invalid Date';
-        }
+    const formatDate = (inputDate) => {
+        const year = inputDate.substring(0, 4);
+        const month = inputDate.substring(4, 6);
+        const day = inputDate.substring(6, 8);
+        return `${day}/${month}/${year}`;
     };
+
 
     const handleItemPress = (item) => {
         navigation.navigate('DetailScreen', { item });
     };
 
-    const handleSearch = () => {
-        // Filter data based on selectedMonth and selectedYear
-        const filteredData = tableData.filter((item) => {
-            const itemMonth = getMonth(parseISO(item.date)) + 1;
-            const itemYear = getYear(parseISO(item.date));
+    const currentYear = new Date().getFullYear();
+    const yearsArray = Array.from({ length: currentYear - 2021 }, (_, index) => (2022 + index).toString());
 
-            return (
-                (!selectedMonth || itemMonth.toString() === selectedMonth) &&
-                (!selectedYear || itemYear.toString() === selectedYear)
-            );
+
+    const calculateTotal = () => {
+        let totalCaisse = 0;
+
+        filteredTableData.forEach((item) => {
+            totalCaisse += item.caisse;
         });
 
-        setFilteredTableData(filteredData);
+        return totalCaisse.toFixed(2);
     };
 
-    const renderHeader = () => (
-        <View style={[styles.row, styles.headerRow]}>
-            <Text style={[styles.text, styles.columnTitle]}>Date     </Text>
-            <Text style={[styles.text, styles.columnTitle]}>N° Tickets</Text>
-            <Text style={[styles.text, styles.columnTitle]}>Recette</Text>
-            <Text style={[styles.text, styles.columnTitle]}>Caisse</Text>
-
-        </View>
-    );
-
     const renderListItem = ({ item }) => {
-        const caisse = item.montant1 - item.taxe - 300;
+        const formattedDate = formatDate(item.date);
+
         return (
             <TouchableOpacity onPress={() => handleItemPress(item)}>
                 <View style={styles.row}>
-                    <Text style={styles.text}>{formatDate(item.date)}</Text>
+                    <Text style={styles.text}>{formattedDate}</Text>
                     <Text style={styles.text}>{item.nbVoyageur}</Text>
-                    <Text style={styles.text}>{item.montant1}</Text>
-                    <Text style={styles.text}>{caisse}</Text>
-
+                    <Text style={styles.text}>{item.caisse.toFixed(2)}</Text>
                 </View>
             </TouchableOpacity>
         )
     };
 
+    const filterData = () => {
+        let filteredData = tableData;
+        if (searchYear !== '') {
+            filteredData = filteredData.filter(item => item.date.startsWith(searchYear));
+        }
+        if (searchMonth !== '') {
+            filteredData = filteredData.filter(item => item.date.substring(4, 6) === searchMonth);
+        }
+        setFilteredTableData(filteredData);
+    };
+
     return (
         <View style={styles.container}>
-
             {loading ? (
                 <View style={styles.animation}>
                     <LottieView
@@ -103,31 +101,57 @@ const GheribData = () => {
             ) : (
                 <>
                     <View style={styles.searchBar}>
-                        <TextInput
-                            style={styles.inputStyle}
-                            placeholder="Mois (1-12)"
-                            keyboardType="numeric"
-                            onChangeText={(text) => setSelectedMonth(text)}
-                            value={selectedMonth}
-                        />
-                        <TextInput
-                            style={styles.inputStyle}
-                            placeholder="Année"
-                            keyboardType="numeric"
-                            onChangeText={(text) => setSelectedYear(text)}
-                            value={selectedYear}
-                        />
-                        <TouchableOpacity onPress={handleSearch} style={styles.loop}>
-                            <FontAwesomeIcon icon={faMagnifyingGlass}
-                                size={30}
-                                color='grey' />
+                        <Picker
+                            style={styles.pickerStyle}
+                            selectedValue={searchYear}
+                            onValueChange={(itemValue, itemIndex) => setSearchYear(itemValue)}
+                        >
+                            <Picker.Item label="Selectionner année" value="" />
+                            {yearsArray.map((year) => (
+                                <Picker.Item key={year} label={year} value={year} />
+                            ))}
+                        </Picker>
+
+                        <Picker
+                            style={styles.pickerStyle}
+                            selectedValue={searchMonth}
+                            onValueChange={(itemValue, itemIndex) =>
+                                setSearchMonth(itemValue)}
+                        >
+                            <Picker.Item label="Selectionner mois" value="" />
+                            <Picker.Item label="Janvier" value="01" />
+                            <Picker.Item label="Fevrier" value="02" />
+                            <Picker.Item label="Mars" value="03" />
+                            <Picker.Item label="Avril" value="04" />
+                            <Picker.Item label="Mai" value="05" />
+                            <Picker.Item label="Juin" value="06" />
+                            <Picker.Item label="Juillet" value="07" />
+                            <Picker.Item label="Aout" value="08" />
+                            <Picker.Item label="Septembre" value="09" />
+                            <Picker.Item label="Octobre" value="10" />
+                            <Picker.Item label="Novembre" value="11" />
+                            <Picker.Item label="Decembre" value="12" />
+                        </Picker>
+
+                        <TouchableOpacity style={styles.loop} onPress={filterData}>
+                            <FontAwesomeIcon icon={faMagnifyingGlass} size={30} color='grey' />
                         </TouchableOpacity>
                     </View>
+
+                    <View style={[styles.row, styles.headerRow]}>
+                        <Text style={[styles.text, styles.columnTitle]}>Date     </Text>
+                        <Text style={[styles.text, styles.columnTitle]}>N° Tickets</Text>
+                        <Text style={[styles.text, styles.columnTitle]}>Caisse</Text>
+
+                    </View>
                     <FlatList
-                        ListHeaderComponent={renderHeader}
                         data={filteredTableData}
                         renderItem={renderListItem}
+
                     />
+                    <View style={styles.totalBox}>
+                        <Text style={styles.totalText}>Total: {calculateTotal()} </Text>
+                    </View>
                 </>
             )}
         </View>
@@ -149,7 +173,8 @@ const styles = StyleSheet.create({
         padding: 10,
     },
     text: {
-        margin: 6
+        margin: 6,
+        fontSize: 18,
     },
     animation: {
         justifyContent: 'center',
@@ -182,6 +207,27 @@ const styles = StyleSheet.create({
         backgroundColor: 'lightgrey',
     },
     inputStyle: {
+        flex: 1,
+        marginRight: 8,
+        padding: 8,
+        borderWidth: 1,
+        borderRadius: 5,
+        borderColor: 'grey',
+    },
+    totalBox: {
+        borderTopWidth: 2,
+        borderColor: '#C1C0B9',
+        padding: 10,
+        marginTop: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    totalText: {
+        fontWeight: 'bold',
+        fontSize: 18,
+    },
+    pickerStyle: {
         flex: 1,
         marginRight: 8,
         padding: 8,
